@@ -1,114 +1,235 @@
 # sugevalReportes
 
-Cliente en R para los **Servicios Web Externos de SUGEVAL** (Costa Rica),
-publicados mediante protocolo **OData**. Análogo a `sugefReportes`, pero
-adaptado a SUGEVAL: autenticación por token Bearer, parámetros en formato
-OData, e iteración automática por ventanas de 6 meses.
+Cliente en R para consultar los
+[Servicios Web Externos de SUGEVAL](https://www.sugeval.fi.cr/serviciosytramites/servicios-web)
+mediante OData. El paquete cubre catálogos, puestos de bolsa, sociedades
+administradoras de fondos de inversión (SAFI), fondos de inversión y cuatro
+estados financieros:
+
+* balance general;
+* cuentas de orden;
+* estado de resultados acumulado;
+* estado de resultados mensual.
+
+El cliente administra el encabezado de autenticación, valida los parámetros,
+respeta una pausa mínima entre peticiones y divide rangos extensos en ventanas
+de hasta seis meses.
+
+> Este proyecto no es un producto oficial de SUGEVAL. Los métodos y límites
+> proceden del
+> [manual técnico oficial](https://www.sugeval.fi.cr/serviciosytramites/servicioweb/Manual%20Tecnico%20SWE.pdf).
+
+## Requisitos
+
+* R 4.1 o posterior.
+* Acceso HTTPS a `serviciosexternos.sugeval.fi.cr`.
+* Un token vigente emitido por SUGEVAL.
+
+Las dependencias de R se instalan automáticamente.
 
 ## Instalación
 
-Coloca la carpeta del paquete y instálala localmente:
+### Desde GitHub
+
+Después de subir esta carpeta a su cuenta, sustituya `SU_USUARIO` por el nombre
+de esa cuenta:
 
 ```r
-# install.packages("remotes")
-remotes::install_local("sugevalReportes")
-# o, en desarrollo, cargar sin instalar:
-#   for (f in list.files("sugevalReportes/R", full.names = TRUE)) source(f)
+install.packages("remotes")
+remotes::install_github("SU_USUARIO/sugevalReportes", dependencies = TRUE)
 ```
 
-Dependencias: `httr`, `jsonlite`, `dplyr`, `tibble`.
+### Desde una carpeta o ZIP descargado
 
-## Token de acceso
+Si descargó y descomprimió el repositorio:
 
-El token de SUGEVAL (el JWT que recibiste por correo) debe estar en la variable
-de entorno `token_sugeval`. Guárdalo en tu archivo `.Renviron`:
-
+```r
+install.packages("remotes")
+remotes::install_local(
+  "C:/ruta/a/sugevalReportes",
+  dependencies = TRUE,
+  upgrade = "never"
+)
 ```
-token_sugeval=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...firma
+
+En desarrollo también puede usar:
+
+```r
+devtools::load_all("C:/ruta/a/sugevalReportes")
 ```
 
-- Pega el **JWT completo**, con sus dos puntos (`.`) que separan los tres
-  bloques (`header.payload.signature`). No lo pongas entre comillas.
-- Reinicia la sesión de R tras editar `.Renviron` (o usa
-  `readRenviron("~/.Renviron")`).
-- **No subas `.Renviron` a GitHub** (agrégalo a `.gitignore`).
-- El token vence: SUGEVAL te avisa por correo 30/15/5/3/1 días antes. Si las
-  consultas fallan con error 401, regenera el token en el Autenticador.
+No se recomienda cargar los archivos de `R/` con `source()`: instalar o cargar
+el paquete garantiza que el espacio de nombres y las dependencias se manejen
+correctamente.
+
+## Configurar el token
+
+Guarde el token en `~/.Renviron` con el nombre `SUGEVAL_TOKEN`. Desde R puede
+abrir ese archivo con:
+
+```r
+file.edit("~/.Renviron")
+```
+
+Agregue una línea como esta, sin comillas y sin escribir la palabra `Bearer`:
+
+```text
+SUGEVAL_TOKEN=pegue_aqui_el_token_completo
+```
+
+Reinicie R y compruebe la configuración sin revelar el valor:
+
+```r
+library(sugevalReportes)
+sugeval_token_configurado()
+```
+
+Por compatibilidad también se reconoce la variable antigua `token_sugeval`.
+No guarde `.Renviron` dentro del repositorio ni comparta el token. El archivo
+`.gitignore` incluido ayuda a evitar una publicación accidental.
 
 ## Uso
 
-### Listar entidades (catálogos)
+### Catálogos y entidades
 
 ```r
 library(sugevalReportes)
 
-# Descubrir todos los catálogos disponibles y sus códigos
+# Descubrir códigos de catálogo.
 catalogos <- listar_catalogos_sugeval()
 
-# Listados por tipo de entidad
-puestos <- listar_puestos_bolsa(estado = "ACTIVO")   # o INACTIVO, o NULL (todos)
-safis   <- listar_safis(estado = "ACTIVO")
-fondos  <- listar_fondos()
+# Puestos y SAFI.
+puestos <- listar_puestos_bolsa(estado = "ACTIVO")
+safis <- listar_safis(estado = "ACTIVO")
+
+# Todos los fondos.
+fondos <- listar_fondos()
+
+# Fondos de una SAFI y, opcionalmente, por estado.
+fondos_safi <- listar_fondos(codigo_safi = "CODIGO_SAFI")
+fondos_activos <- listar_fondos(
+  codigo_safi = "CODIGO_SAFI",
+  estado = "ACTIVO"
+)
 ```
 
 ### Estados financieros
 
-Reportes disponibles: `"balance"`, `"cuentas_orden"`,
-`"resultados_acumulado"`, `"resultados_mensual"`.
-Tipos de entidad: `"puesto"`, `"safi"`, `"fondo"`.
+Los valores válidos de `reporte` son `"balance"`, `"cuentas_orden"`,
+`"resultados_acumulado"` y `"resultados_mensual"`. Los tipos de entidad son
+`"puesto"`, `"safi"` y `"fondo"`.
 
 ```r
-# Balance de los TRES tipos de entidad, info más reciente
-bal <- obtener_reporte_sugeval("balance", tipos = c("puesto","safi","fondo"),
-                               reciente = TRUE)
+# Último balance disponible de los tres tipos de entidad.
+balance_reciente <- obtener_reporte_sugeval(
+  "balance",
+  tipos = c("puesto", "safi", "fondo"),
+  reciente = TRUE
+)
 
-# Balance de puestos de bolsa en un rango (se itera en ventanas de 6 meses)
-bal_puestos <- obtener_reporte_sugeval("balance", tipos = "puesto",
-                                       from = "2023-01-01", to = "2024-12-31")
+# Una fecha de corte.
+balance_fecha <- obtener_reporte_sugeval(
+  "balance",
+  tipos = "puesto",
+  fecha = "2024-06-30"
+)
 
-# Estado de resultados mensual de una SAFI concreta
-res_safi <- obtener_reporte_sugeval("resultados_mensual", tipos = "safi",
-                                    codigo = "SU0001",
-                                    from = "2024-01-01", to = "2024-06-30")
+# Un rango amplio; se divide automáticamente en ventanas de seis meses.
+resultados <- obtener_reporte_sugeval(
+  "resultados_mensual",
+  tipos = "safi",
+  from = "2023-01-01",
+  to = "2024-12-31"
+)
+
+# Un fondo concreto. El código proviene de listar_fondos().
+balance_fondo <- obtener_reporte_sugeval(
+  "balance",
+  tipos = "fondo",
+  codigo = "CODIGO_FONDO",
+  reciente = TRUE
+)
 ```
 
-Cada fila del resultado trae dos columnas de trazabilidad: `.tipo_entidad`
-(puesto/safi/fondo) y `.reporte`.
+Las respuestas no vacías incluyen `.tipo_entidad` y `.reporte` para conservar
+la trazabilidad después de consolidar resultados.
 
-### Consulta de bajo nivel (una sola llamada)
+### Una sola petición
+
+`consultar_reporte()` es la interfaz de bajo nivel. Un rango no puede superar
+seis meses:
 
 ```r
-# Una fecha de corte, todas las entidades de un tipo
-consultar_reporte("puesto", "balance", fecha = "2024-06-30")
-
-# Una entidad concreta, rango ≤ 6 meses
-consultar_reporte("fondo", "balance", codigo = "F0001",
-                  from = "2024-01-01", to = "2024-06-30")
+una_consulta <- consultar_reporte(
+  tipo = "puesto",
+  reporte = "balance",
+  from = "2024-01-01",
+  to = "2024-06-30"
+)
 ```
 
-## Notas del web service
+Debe elegirse exactamente un modo: `fecha`, `from` junto con `to`, o
+`reciente = TRUE`.
 
-- **Rango máximo:** 6 meses por consulta de estados financieros. La función de
-  alto nivel divide rangos mayores automáticamente.
-- **Intervalo entre peticiones:** el servicio rechaza llamadas demasiado
-  seguidas. El paquete espera `~1 s` entre peticiones (ajustable en
-  `.SUGEVAL_MIN_INTERVALO`). Si ves el error "intervalos entre peticiones",
-  súbelo.
-- **Histórico:** catálogos contables desde 2004; Resumen Financiero de SAFIs y
-  UDEs desde 2008.
-- **No compartas el token:** consultas simultáneas con el mismo token pueden
-  hacer que SUGEVAL lo bloquee automáticamente.
+## Control de peticiones y errores
 
-## Estructura del paquete
+La pausa predeterminada es de un segundo y el tiempo máximo de una petición es
+de 60 segundos. Puede ajustarlos para la sesión actual:
 
+```r
+options(
+  sugevalReportes.min_intervalo = 1.5,
+  sugevalReportes.timeout = 90
+)
 ```
-sugevalReportes/
-├── DESCRIPTION
-├── NAMESPACE
-├── README.md
-└── R/
-    ├── 01_core_odata.R      # autenticación, formato OData, petición GET
-    ├── 02_catalogos.R       # catálogos y listados de entidades
-    ├── 03_reportes.R        # métodos de estados financieros por tipo
-    └── 04_obtener_reporte.R # orquestación de alto nivel (ventanas 6 meses)
+
+SUGEVAL no publica el valor exacto del intervalo mínimo y puede modificarlo.
+Si el servicio rechaza peticiones muy seguidas, aumente
+`sugevalReportes.min_intervalo`.
+
+Por defecto, `obtener_reporte_sugeval()` se detiene ante un error. Para obtener
+resultados parciales en una descarga extensa:
+
+```r
+resultado <- obtener_reporte_sugeval(
+  "balance",
+  reciente = TRUE,
+  intentar_continuar = TRUE
+)
+
+attr(resultado, "errores_sugeval")
 ```
+
+Si todas las peticiones fallan, la función siempre produce un error en lugar
+de devolver silenciosamente una tabla vacía.
+
+## Desarrollo y comprobación
+
+```r
+devtools::document()
+devtools::test()
+devtools::check()
+```
+
+Las pruebas automatizadas no consumen el servicio ni necesitan token. La
+prueba manual instalada sí consulta SUGEVAL:
+
+```r
+source(system.file(
+  "examples", "prueba_sugeval.R",
+  package = "sugevalReportes"
+))
+```
+
+## Seguridad y límites del servicio
+
+* No comparta el token ni haga consultas simultáneas con el mismo token.
+* El histórico contable indicado por SUGEVAL comienza en 2004.
+* El rango máximo de una petición contable es de seis meses móviles.
+* Los datos pueden cambiar por reenvíos de las entidades reguladas.
+* Un error 401 o 403 suele indicar que el token venció, fue rechazado o quedó
+  bloqueado.
+
+## Licencia
+
+MIT © 2026 Diego Sáenz C.
