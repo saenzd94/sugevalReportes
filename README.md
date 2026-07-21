@@ -31,12 +31,9 @@ Las dependencias de R se instalan automáticamente.
 
 ### Desde GitHub
 
-Después de subir esta carpeta a su cuenta, sustituya `SU_USUARIO` por el nombre
-de esa cuenta:
-
 ```r
 install.packages("remotes")
-remotes::install_github("SU_USUARIO/sugevalReportes", dependencies = TRUE)
+remotes::install_github("saenzd94/sugevalReportes", dependencies = TRUE)
 ```
 
 ### Desde una carpeta o ZIP descargado
