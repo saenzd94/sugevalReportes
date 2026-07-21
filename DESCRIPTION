@@ -1,0 +1,24 @@
+Package: sugevalReportes
+Type: Package
+Title: Cliente de los Servicios Web Externos de SUGEVAL (OData)
+Version: 0.1.0
+Authors@R: person("Diego", "Sáenz C.", role = c("aut", "cre"),
+                  email = "diego@example.com")
+Description: Paquete en R para consumir los Servicios Web Externos de la
+    Superintendencia General de Valores (SUGEVAL) de Costa Rica, publicados
+    mediante protocolo OData. Permite obtener catálogos de entidades (Puestos
+    de Bolsa, SAFIs, Fondos de Inversión) y sus estados financieros (Balance
+    General, Cuentas de Orden, Estados de Resultados acumulado y mensual),
+    gestionando la autenticación por token, el formato OData de los parámetros,
+    el intervalo mínimo entre peticiones y la iteración por ventanas de seis
+    meses que impone el servicio.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports:
+    httr,
+    jsonlite,
+    dplyr,
+    tibble,
+    stats
+RoxygenNote: 7.2.3
