@@ -1,7 +1,7 @@
 Package: sugevalReportes
 Type: Package
 Title: Cliente para los Servicios Web Externos de SUGEVAL
-Version: 0.2.0
+Version: 0.4.0
 Authors@R: person(
     given = "Diego",
     family = "Sáenz C.",
@@ -12,7 +12,9 @@ Description: Cliente para consultar desde R los Servicios Web Externos de la
     Superintendencia General de Valores (SUGEVAL) de Costa Rica mediante
     OData. Facilita la autenticación, la consulta de catálogos y entidades, y
     la descarga de estados financieros de puestos de bolsa, sociedades
-    administradoras de fondos de inversión y fondos de inversión. También
+    administradoras de fondos de inversión y fondos de inversión, así como
+    la consulta y exportación de emisiones locales vigentes y de la
+    información diaria de fondos de inversión. También
     divide automáticamente los rangos extensos en ventanas compatibles con
     el límite de seis meses del servicio.
 License: MIT + file LICENSE
@@ -28,6 +30,7 @@ Imports:
     tibble
 Suggests:
     testthat (>= 3.0.0),
-    withr
+    withr,
+    writexl
 Config/testthat/edition: 3
 RoxygenNote: 7.3.2

@@ -3,8 +3,8 @@
 Cliente en R para consultar los
 [Servicios Web Externos de SUGEVAL](https://www.sugeval.fi.cr/serviciosytramites/servicios-web)
 mediante OData. El paquete cubre catálogos, puestos de bolsa, sociedades
-administradoras de fondos de inversión (SAFI), fondos de inversión y cuatro
-estados financieros:
+administradoras de fondos de inversión (SAFI), fondos de inversión, emisiones
+locales vigentes y cuatro estados financieros:
 
 * balance general;
 * cuentas de orden;
@@ -31,9 +31,12 @@ Las dependencias de R se instalan automáticamente.
 
 ### Desde GitHub
 
+Después de subir esta carpeta a su cuenta, sustituya `SU_USUARIO` por el nombre
+de esa cuenta:
+
 ```r
 install.packages("remotes")
-remotes::install_github("saenzd94/sugevalReportes", dependencies = TRUE)
+remotes::install_github("SU_USUARIO/sugevalReportes", dependencies = TRUE)
 ```
 
 ### Desde una carpeta o ZIP descargado
@@ -58,6 +61,22 @@ devtools::load_all("C:/ruta/a/sugevalReportes")
 No se recomienda cargar los archivos de `R/` con `source()`: instalar o cargar
 el paquete garantiza que el espacio de nombres y las dependencias se manejen
 correctamente.
+
+#### ¿Por qué el repositorio contiene una carpeta `R/`?
+
+Porque forma parte de la estructura estándar de un paquete fuente de R. Esos
+archivos son necesarios para construir el paquete y también están presentes en
+los repositorios fuente de paquetes publicados en CRAN. Al instalar desde
+GitHub, `remotes` descarga esa fuente en un área temporal, R crea la base de
+carga diferida del paquete y después las funciones quedan disponibles con:
+
+```r
+library(sugevalReportes)
+```
+
+Eliminar `R/` del repositorio impediría instalar el paquete. Si se descarga el
+ZIP del repositorio manualmente, la carpeta seguirá siendo visible porque se
+está viendo el código fuente, no una instalación terminada.
 
 ## Configurar el token
 
@@ -167,6 +186,46 @@ una_consulta <- consultar_reporte(
 
 Debe elegirse exactamente un modo: `fecha`, `from` junto con `to`, o
 `reciente = TRUE`.
+
+### Emisiones locales vigentes
+
+```r
+emisiones <- listar_emisiones_vigentes()
+
+# Emisiones por emisor.
+dplyr::count(emisiones, CodigoEmisor, NombreEmisor, sort = TRUE)
+
+# Archivos para Excel u otras herramientas.
+exportar_emisiones_vigentes("emisiones_vigentes.csv", emisiones)
+exportar_emisiones_vigentes("emisiones_vigentes.xlsx", emisiones)
+```
+
+## Información diaria de fondos
+
+La información diaria puede consultarse para una fecha o para un rango de
+hasta seis meses:
+
+```r
+diarios <- consultar_informacion_diaria_fondos(fecha = "2026-07-22")
+
+historico_diario <- consultar_informacion_diaria_fondos(
+  from = "2026-07-01",
+  to = "2026-07-22"
+)
+
+exportar_informacion_diaria_fondos("fondos_diarios.csv", diarios)
+exportar_informacion_diaria_fondos("fondos_diarios.xlsx", diarios)
+```
+
+`ValorParticipacionCalculado` es un indicador derivado
+(`ActivoNeto / NumeroValoresParticipacion`), no un campo directo del servicio.
+El encabezado y las notas oficiales quedan disponibles mediante
+`attr(diarios, "encabezado_sugeval")`.
+
+La consulta corresponde al conjunto vigente en el RNVI a la fecha de la
+petición. Los archivos CSV se escriben en UTF-8 con BOM y las exportaciones
+protegen valores de texto que podrían ser interpretados como fórmulas por una
+hoja de cálculo. Para XLSX se utiliza el paquete sugerido `writexl`.
 
 ## Control de peticiones y errores
 
