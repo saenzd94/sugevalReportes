@@ -239,7 +239,7 @@ sugeval_token_configurado <- function() {
       url,
       httr::add_headers(Authorization = paste("Bearer", token)),
       httr::accept_json(),
-      httr::user_agent("sugevalReportes/0.2.0"),
+      httr::user_agent("sugevalReportes/0.4.0"),
       httr::timeout(timeout)
     ),
     error = function(error) {

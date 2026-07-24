@@ -33,7 +33,8 @@
 .extraer_datos <- function(
     parsed,
     preferidos = c(
-      "Catalogos", "Fondos", "BalanceGeneral", "CuentasOrden",
+      "Catalogos", "Fondos", "InformacionDiariaFondos",
+      "BalanceGeneral", "CuentasOrden",
       "CuentaOrden", "EstadosResultados", "EstadoResultadoAcumulado",
       "EstadoResultadoMensual", "value"
     )) {
