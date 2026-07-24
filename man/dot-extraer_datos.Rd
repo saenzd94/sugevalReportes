@@ -6,8 +6,9 @@
 \usage{
 .extraer_datos(
   parsed,
-  preferidos = c("Catalogos", "Fondos", "BalanceGeneral", "CuentasOrden", "CuentaOrden",
-    "EstadosResultados", "EstadoResultadoAcumulado", "EstadoResultadoMensual", "value")
+  preferidos = c("Catalogos", "Fondos", "InformacionDiariaFondos", "BalanceGeneral",
+    "CuentasOrden", "CuentaOrden", "EstadosResultados", "EstadoResultadoAcumulado",
+    "EstadoResultadoMensual", "value")
 )
 }
 \arguments{
